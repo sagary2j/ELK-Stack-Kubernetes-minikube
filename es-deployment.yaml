@@ -1,0 +1,55 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: es-logging
+  name: es-logging
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: es-logging
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: es-logging
+    spec:
+      containers:
+      - image: elasticsearch:7.8.0
+        imagePullPolicy: IfNotPresent
+        name: elasticsearch
+        ports:
+        - containerPort: 9200
+          name: http
+          protocol: TCP
+        - containerPort: 9300
+          name: transport
+          protocol: TCP
+        env:
+        - name: discovery.type
+          value: single-node
+        volumeMounts:
+        - name: elasticsearch-logging
+          mountPath: /data
+        livenessProbe:
+          httpGet:
+            port: http
+            path: /_cluster/health
+          initialDelaySeconds: 40
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: elasticsearch-logging
+        emptyDir: {}

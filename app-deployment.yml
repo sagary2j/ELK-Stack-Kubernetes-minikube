@@ -1,0 +1,40 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: logging-app-manual
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: logging-app-manual
+  template:
+    metadata:
+      labels:
+        name: logging-app-manual
+    spec:
+      hostname: logging-app-manual
+      containers:
+        - name: beat-manual
+          image: elastic/filebeat:7.8.0
+          args: [
+            "-c", "/etc/filebeat/filebeat.yml",
+            "-e"      ]
+          volumeMounts:
+            - name: beat-manual-config
+              mountPath: /etc/filebeat/
+            - name: manual-log-directory
+              mountPath: /tmp/
+        - name: logging-app-manual
+          image: sladesoftware/log-application:latest
+          volumeMounts:
+            - name: manual-log-directory
+              mountPath: /tmp/
+      volumes:
+        - name: beat-manual-config
+          configMap:
+            name: beat-manual-config
+            items:
+              - key: filebeat.yml
+                path: filebeat.yml
+        - name: manual-log-directory
+          emptyDir: {}
